@@ -1,0 +1,38 @@
+package cn.edu.hqu.javaee;
+
+import javax.sql.DataSource;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
+import org.springframework.jndi.JndiObjectFactoryBean;
+
+@Configuration
+@PropertySource("classpath:application.properties")
+public class DataSourceConfig {
+	//通过嵌入式数据库获取DataSource对象
+	@Bean(destroyMethod="shutdown")
+	@Profile("dev")
+	public DataSource embeddedDataSource() {
+		return new EmbeddedDatabaseBuilder()
+				.setType(EmbeddedDatabaseType.H2)
+				.addScript("schema.sql")
+				.addScript("test-data.sql")
+				.build();
+		
+	}
+	
+	//通过JNDI获取生产环境下的DataSource对象
+	@Bean
+	@Profile("prod")
+	public DataSource jndiDataSource() {
+		JndiObjectFactoryBean jndiObjectFactoryBean=new JndiObjectFactoryBean();
+		jndiObjectFactoryBean.setJndiName("jdbc/myDS");
+		jndiObjectFactoryBean.setResourceRef(true);
+		jndiObjectFactoryBean.setProxyInterface(javax.sql.DataSource.class);
+		return (DataSource)jndiObjectFactoryBean.getObject();
+	}
+}
